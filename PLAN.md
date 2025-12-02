@@ -1,5 +1,7 @@
 # Cloud Cron To-Do Plan
 
+`examples/basic` is our living testbed: we will evolve it in each phase as modules land, rather than waiting until the end.
+
 ## Phase 0: Establish repo scaffolding
 
 - [x] Create directories: `modules/scheduled-lambda`, `modules/email-notification`, `modules/sms-notification`, `modules/lambda-container`, `examples/basic`.
@@ -8,47 +10,61 @@
 - [x] Add Pixi project file with toolchain (terraform/tofu, python for lambdas)
 - [x] Verify: run `terraform fmt -recursive`/`tofu fmt` and `terraform validate` at repo root; ensure pre-commit passes; ensure CI bootstrap (if added) passes locally.
 
-## Phase 1: Build scheduled Lambda module (`modules/scheduled-lambda`)
+## Phase 1: Lambda container image management modules
+
+### Phase 1.1: Build Lambda container republish module (`modules/lambda-container`)
+- [ ] Inputs: `source_lambda_repo`, `source_lambda_tag`, optional destination repo name, KMS encryption flag.
+- [ ] Resources: destination ECR repo, permissions for pull/push, data source for source image digest, replication via `null_resource`/`local-exec` or pull-through cache rule.
+- [ ] Outputs: destination `lambda_image_uri` for scheduled module.
+- [ ] Verify: `terraform plan` shows repo and replication steps; document manual check (`aws ecr describe-images` for dest tag).
+- [ ] Example touchpoint: optionally show `examples/basic` using the republished image output to feed the scheduled-lambda module (document how to toggle on/off).
+
+### Phase 1.2: Build Lambda image-from-directory module (`modules/lambda-image-build`)
+- [ ] Inputs: `source_dir` (Dockerfile directory), optional `repository_name`, `image_tag` (default `latest`), `build_args`, `platform` (e.g., `linux/amd64`), tags.
+- [ ] Resources: ECR repository (or use provided), lifecycle policy, data sources for account/region, and `null_resource` with `local-exec` to `docker buildx build` and `docker push` the image.
+- [ ] Outputs: `image_uri`, repository ARN/URL.
+- [ ] Verify: `terraform plan` shows repo + build/push steps; document prerequisites (`docker login`/credentials).
+- [ ] Example touchpoint: allow `examples/basic` to build/push a simple placeholder Lambda image from a local Dockerfile as an alternative to the republish module.
+
+## Phase 2: Build scheduled Lambda module (`modules/scheduled-lambda`)
 - [ ] Define inputs: `lambda_image_uri`, `schedule_expression`, `sns_topics` (map envvar->ARN), optional `lambda_env`, `timeout`, `memory_size`, `tags`.
 - [ ] Create resources: IAM role/policy (CloudWatch Logs + `sns:Publish` to provided ARNs), Lambda from container image, EventBridge rule/target/permission.
 - [ ] Outputs: Lambda ARN, execution role ARN, log group name, schedule rule name.
 - [ ] Docs: README with usage matching IDEA example.
 - [ ] Verify: `terraform validate` in `modules/scheduled-lambda`; example `terraform plan` shows env var wiring and schedule target; run `make validate`/`tflint` if configured.
+- [ ] Example touchpoint: scaffold `examples/basic` with this module + stub SNS topic(s) and the container image outputs from Phase 1; `terraform validate/plan` should pass to prove schedule wiring.
 
-## Phase 2: Build notification modules
+## Phase 3: Build notification modules
 
-### Phase 2.1: Shared notification container and queueing infra
-- [ ] Create single Python codebase (shared package) with entrypoint switching to handler based on env var/routing key; package as one Docker image for Lambda.
+### Phase 3.1: Shared notification container and queueing infra
+- [ ] Create single Python codebase in `modules/notification-runtime/` (shared package) with entrypoint switching to handler based on env var/routing key; package as one Docker image for Lambda.
 - [ ] Terraform: shared container build/publish for notifications; SQS FIFO queue for deduplication between SNS topic and Lambdas; SNS subscription to FIFO SQS with content-based dedup; SQS trigger to Lambda; IAM for SQS poll, logs, SES send, Secrets/SSM read, Twilio access.
 - [ ] Inputs per module: `sns_topic_arn`, `fifo_queue_name`/settings, handler selector/env vars; shared tags/log retention.
 - [ ] Verify: `terraform validate`; example `plan`; container build succeeds locally; pytest skeleton runs.
+- [ ] Example touchpoint: extend `examples/basic` to include the notification container + FIFO SQS subscription to the sample SNS topic; run `terraform validate/plan` to confirm SNS->SQS->Lambda path.
 
-### Phase 2.2: Email via SES handler (`modules/email-notification`)
+### Phase 3.2: Email via SES handler (`modules/email-notification`)
 - [ ] Define handler contract: expect message payload with subject/template vars; support optional config set/reply-to; log delivery status.
 - [ ] Python code: SES client wrapper; load template (managed via Terraform) and render with variables; handle throttling/retries and DLQ-safe errors.
 - [ ] Terraform: SES template creation; Lambda configuration/env (sender, recipients, template name, config set); permissions for SES send + logs; wire to shared container image and handler selection.
 - [ ] Tests: pytest with sample SNS/SQS events; stub/moto SES; validate error handling and idempotency.
 - [ ] Verify: `terraform validate`; handler unit tests green; document smoke test (publish SNS message to topic -> email delivered/SES sandbox note).
+- [ ] Example touchpoint: wire the email module into `examples/basic` with sample SES template/resources and document the SNS publish -> email expectation.
 
-### Phase 2.3: SMS via Twilio handler (`modules/sms-notification`)
+### Phase 3.3: SMS via Twilio handler (`modules/sms-notification`)
 - [ ] Define handler contract: expect message payload with body/recipients; support per-message override of to-numbers; log Twilio SID/error.
 - [ ] Python code: Twilio REST client wrapper; read SID/auth token from SSM/Secrets; handle rate limits/retries; sanitize phone numbers; DLQ-safe errors.
 - [ ] Terraform: Lambda configuration/env (from-number, default recipients, secret ARNs), IAM for Secrets Manager/SSM read + logs; wire to shared container image and handler selection.
 - [ ] Tests: pytest with mocked Twilio client; cover success/failure paths and secret fetch.
 - [ ] Verify: `terraform validate`; handler unit tests green; document smoke test (publish SNS message to topic -> SMS sent).
+- [ ] Example touchpoint: add the SMS module to `examples/basic` (guard secrets/recipients via variables) and include a smoke path in the README.
 
-## Phase 3: Build Lambda container republish module (`modules/lambda-container`)
-- [ ] Inputs: `source_lambda_repo`, `source_lambda_tag`, optional destination repo name, KMS encryption flag.
-- [ ] Resources: destination ECR repo, permissions for pull/push, data source for source image digest, replication via `null_resource`/`local-exec` or pull-through cache rule.
-- [ ] Outputs: destination `lambda_image_uri` for scheduled module.
-- [ ] Verify: `terraform plan` shows repo and replication steps; document manual check (`aws ecr describe-images` for dest tag).
+## Phase 4: Hardening, testing, documentation, release
 
-## Phase 4: Example, testing, documentation, release
-
-### Phase 4.1: Example stack and verification (`examples/basic`)
-- [ ] Compose: SNS topic feeding a FIFO SQS queue, scheduled-lambda using placeholder client image, notification container Lambda (email/SMS handlers) consuming the queue.
-- [ ] Provide variables/defaults and README walkthrough (init, plan, apply, publish test message through SNS->SQS->Lambda).
-- [ ] Verify: `terraform fmt/validate` and `terraform plan` in example; document manual SNS publish test and expected outputs.
+### Phase 4.1: Example polish and end-to-end regression (`examples/basic`)
+- [ ] Consolidate prior touchpoints into a clean walkthrough (init, plan, apply, publish test message through SNS->SQS->Lambda handlers).
+- [ ] Ensure defaults/variables make the example easy to run with minimal secrets, with notes for SES/Twilio sandboxing.
+- [ ] Verify: `terraform fmt/validate` and `terraform plan` in example; capture expected outputs/log markers for manual SNS publish tests.
 
 ### Phase 4.2: Testing & CI
 - [ ] Add `make test` to run fmt, validate, lint, and Lambda unit tests.

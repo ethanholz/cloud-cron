@@ -8,7 +8,8 @@ This is intended to be a framework that can be used by client code to define the
 
 1. **Scheduled Lambda Functions**: The goal here is that the client can provide their own lambda function (as a container image) and, from that, we will run it on a schedule defined by the client. The lambda function needs to know 1 or more SNS topics to which it will publish messages when it runs; different "types" of messages can go to different SNS topics, which will then be subscribed to by different notification channels. This will include the lambda execution role and the scheduled events.
 2. **SNS Topics**: These will be manually created by the client code, but ARNs might be needed to give the lambda permissions to publish.
-3. **Notification Channels**: We will provide modules for different notification channels (e.g., email via SES, SMS via Twilio, etc.).
+3. **Notification Channels**: We will provide modules for different notification channels (e.g., email via SES, SMS via Twilio, etc.). Each notification module owns the SNS->SQS->Lambda wiring: it provisions the FIFO SQS queue/subscription used for deduplication and triggers its handler; the user should not create that queue manually.
+4. **Lambda Image Utilities**: In addition to republishing an existing Lambda container, we will provide a module to build an image from a local directory containing a Dockerfile and publish it to ECR for use by the scheduled-lambda module.
 
 
 The goal is that the user will need to:
@@ -56,6 +57,13 @@ module my_lambda_container {
   source = "./modules/lambda-container"
   source_lambda_repo = "123456789012.dkr.ecr.us-west-2.amazonaws.com/my-lambda"
   source_lambda_tag = "latest"
+}
+
+module my_lambda_image_build {
+  source = "./modules/lambda-image-build"
+  source_dir = "${path.module}/lambda-src"
+  repository_name = "my-lambda"
+  image_tag = "latest"
 }
 ```
 
