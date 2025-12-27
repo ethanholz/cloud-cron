@@ -13,18 +13,18 @@
 ## Phase 1: Lambda container image management modules
 
 ### Phase 1.1: Build Lambda container republish module (`modules/lambda-container`)
-- [ ] Inputs: `source_lambda_repo`, `source_lambda_tag`, optional destination repo name, KMS encryption flag.
-- [ ] Resources: destination ECR repo, permissions for pull/push, data source for source image digest, replication via `null_resource`/`local-exec` or pull-through cache rule.
-- [ ] Outputs: destination `lambda_image_uri` for scheduled module.
-- [ ] Verify: `terraform plan` shows repo and replication steps; document manual check (`aws ecr describe-images` for dest tag).
-- [ ] Example touchpoint: optionally show `examples/basic` using the republished image output to feed the scheduled-lambda module (document how to toggle on/off).
+- [x] Inputs: `source_lambda_repo`, `source_lambda_tag`, optional destination repo name, KMS encryption flag.
+- [x] Resources: destination ECR repo, permissions for pull/push, data source for source image digest, replication via `null_resource`/`local-exec` or pull-through cache rule.
+- [x] Outputs: destination `lambda_image_uri` for scheduled module.
+- [x] Verify: `terraform plan` shows repo and replication steps; document manual check (`aws ecr describe-images` for dest tag).
+- [x] Example touchpoint: optionally show `examples/basic` using the local image output to feed the scheduled-lambda module (document how to toggle on/off).
 
 ### Phase 1.2: Build Lambda image-from-directory module (`modules/lambda-image-build`)
-- [ ] Inputs: `source_dir` (Dockerfile directory), optional `repository_name`, `image_tag` (default `latest`), `build_args`, `platform` (e.g., `linux/amd64`), tags.
-- [ ] Resources: ECR repository (or use provided), lifecycle policy, data sources for account/region, and `null_resource` with `local-exec` to `docker buildx build` and `docker push` the image.
-- [ ] Outputs: `image_uri`, repository ARN/URL.
-- [ ] Verify: `terraform plan` shows repo + build/push steps; document prerequisites (`docker login`/credentials).
-- [ ] Example touchpoint: allow `examples/basic` to build/push a simple placeholder Lambda image from a local Dockerfile as an alternative to the republish module.
+- [x] Inputs: `source_dir` (Dockerfile directory), optional `repository_name`, `image_tag` (default `latest`), `build_args`, `platform` (e.g., `linux/amd64`), tags.
+- [x] Resources: ECR repository (or use provided), lifecycle policy, data sources for account/region, and `null_resource` with `local-exec` to `docker buildx build` and `docker push` the image.
+- [x] Outputs: `image_uri`, repository ARN/URL.
+- [x] Verify: `terraform plan` shows repo + build/push steps; document prerequisites (`docker login`/credentials).
+- [x] Example touchpoint: allow `examples/basic` to build/push a simple placeholder Lambda image from a local Dockerfile as an alternative to the republish module.
 
 ## Phase 2: Build scheduled Lambda module (`modules/scheduled-lambda`)
 - [ ] Define inputs: `lambda_image_uri`, `schedule_expression`, `sns_topics` (map envvar->ARN), optional `lambda_env`, `timeout`, `memory_size`, `tags`.

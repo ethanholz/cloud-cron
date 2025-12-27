@@ -5,7 +5,7 @@
 
 ## General Playbook
 - Keep work aligned to `PLAN.md`; propose plan updates if scope shifts.
-- Use `pixi` for reproducible envs; prefer `pixi run` over ad-hoc installs.
+- Use `pixi` for reproducible envs
 - Add small, focused docstrings and comments only where non-obvious intent needs clarity.
 
 ## Writing Plans
@@ -23,7 +23,7 @@
 ## Infrastructure (opentofu)
 - Keep infrastructure code formatted and validated: `tofu fmt` and `tofu validate` before sharing.
 - Separate plan/apply steps; never apply without review. Capture variables in `.tfvars` or env, not inline secrets.
-- AWS resources should be tagged with `managed_by: cloudcron`
+- AWS resources should be tagged with `managed_by`, defaulting to `cloudcron` if not set.
 
 
 ## Observability and Safety
