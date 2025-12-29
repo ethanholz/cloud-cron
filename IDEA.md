@@ -10,6 +10,7 @@ This is intended to be a framework that can be used by client code to define the
 2. **SNS Topics**: These will be manually created by the client code, but ARNs might be needed to give the lambda permissions to publish.
 3. **Notification Channels**: We will provide modules for different notification channels (e.g., email via SES, SMS via Twilio, etc.). Each notification module owns the SNS->SQS->Lambda wiring: it provisions the FIFO SQS queue/subscription used for deduplication and triggers its handler; the user should not create that queue manually.
 4. **Lambda Image Utilities**: In addition to republishing an existing Lambda container, we will provide a module to build an image from a local directory containing a Dockerfile and publish it to ECR for use by the scheduled-lambda module.
+5. **Python Runtime Library**: Provide reusable Python code in `src/cloud_cron/` that makes authoring custom scheduled lambdas easy (task base class, SNS dispatch helpers, and ergonomic handler wiring).
 
 
 The goal is that the user will need to:

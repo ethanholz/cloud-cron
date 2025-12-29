@@ -34,16 +34,40 @@
 - [ ] Verify: `terraform validate` in `modules/scheduled-lambda`; example `terraform plan` shows env var wiring and schedule target; run `make validate`/`tflint` if configured.
 - [ ] Example touchpoint: scaffold `examples/basic` with this module + stub SNS topic(s) and the container image outputs from Phase 1; `terraform validate/plan` should pass to prove schedule wiring.
 
-## Phase 3: Build notification modules
+## Phase 3: Python runtime library for custom lambdas (`src/cloud_cron/`)
 
-### Phase 3.1: Shared notification container and queueing infra
-- [ ] Create single Python codebase in `modules/notification-runtime/` (shared package) with entrypoint switching to handler based on env var/routing key; package as one Docker image for Lambda.
+Overview: turn the existing Python helpers into a reusable, testable library that makes it easy for users to author scheduled lambdas while keeping SNS wiring and logging consistent. This package will also host shared notification handler code (under `src/cloud_cron/notifications/`), while deployment/container wiring remains in Terraform modules.
+
+Success criteria:
+
+- A minimal, well-documented API for defining tasks and dispatching results to SNS.
+- Clear guidance in `src/cloud_cron/HOWTO-custom-lambda.md` that matches the library behavior.
+- Unit tests covering the core dispatch and handler flow using mocked AWS clients.
+
+Decisions and motivations:
+
+- Keep code in `src/cloud_cron/` to stay close to Terraform modules and examples, while enabling importable Python helpers.
+- Prefer dependency injection for AWS clients to avoid real AWS calls and keep tests fast.
+
+To-do:
+
+- [ ] Refine the base task class to be typed, injectable (boto3 session/client), and structured-logging friendly.
+- [ ] Add a small SNS dispatch helper that validates topic keys and emits clear errors on mismatches.
+- [ ] Add `src/cloud_cron/notifications/` for shared handler logic (SES/Twilio/etc.) that can be imported by notification runtimes.
+- [ ] Update `src/cloud_cron/HOWTO-custom-lambda.md` to show the current recommended pattern and env var expectations.
+- [ ] Add pytest cases with moto/mocks to cover SNS publish and mismatch errors.
+- [ ] Document a minimal example task module that can be used in `examples/basic` or in a client repo.
+
+## Phase 4: Build notification modules
+
+### Phase 4.1: Shared notification container and queueing infra
+- [ ] Create a thin runtime wrapper in `modules/notification-runtime/` that packages a Lambda image and selects handlers via env var/routing key; handler implementations live in `src/cloud_cron/notifications/` (Phase 3) and are imported into the runtime. Reuse shared helpers from `src/cloud_cron/` for logging/dispatch conventions.
 - [ ] Terraform: shared container build/publish for notifications; SQS FIFO queue for deduplication between SNS topic and Lambdas; SNS subscription to FIFO SQS with content-based dedup; SQS trigger to Lambda; IAM for SQS poll, logs, SES send, Secrets/SSM read, Twilio access.
 - [ ] Inputs per module: `sns_topic_arn`, `fifo_queue_name`/settings, handler selector/env vars; shared tags/log retention.
 - [ ] Verify: `terraform validate`; example `plan`; container build succeeds locally; pytest skeleton runs.
 - [ ] Example touchpoint: extend `examples/basic` to include the notification container + FIFO SQS subscription to the sample SNS topic; run `terraform validate/plan` to confirm SNS->SQS->Lambda path.
 
-### Phase 3.2: Email via SES handler (`modules/email-notification`)
+### Phase 4.2: Email via SES handler (`modules/email-notification`)
 - [ ] Define handler contract: expect message payload with subject/template vars; support optional config set/reply-to; log delivery status.
 - [ ] Python code: SES client wrapper; load template (managed via Terraform) and render with variables; handle throttling/retries and DLQ-safe errors.
 - [ ] Terraform: SES template creation; Lambda configuration/env (sender, recipients, template name, config set); permissions for SES send + logs; wire to shared container image and handler selection.
@@ -51,7 +75,7 @@
 - [ ] Verify: `terraform validate`; handler unit tests green; document smoke test (publish SNS message to topic -> email delivered/SES sandbox note).
 - [ ] Example touchpoint: wire the email module into `examples/basic` with sample SES template/resources and document the SNS publish -> email expectation.
 
-### Phase 3.3: SMS via Twilio handler (`modules/sms-notification`)
+### Phase 4.3: SMS via Twilio handler (`modules/sms-notification`)
 - [ ] Define handler contract: expect message payload with body/recipients; support per-message override of to-numbers; log Twilio SID/error.
 - [ ] Python code: Twilio REST client wrapper; read SID/auth token from SSM/Secrets; handle rate limits/retries; sanitize phone numbers; DLQ-safe errors.
 - [ ] Terraform: Lambda configuration/env (from-number, default recipients, secret ARNs), IAM for Secrets Manager/SSM read + logs; wire to shared container image and handler selection.
@@ -59,20 +83,20 @@
 - [ ] Verify: `terraform validate`; handler unit tests green; document smoke test (publish SNS message to topic -> SMS sent).
 - [ ] Example touchpoint: add the SMS module to `examples/basic` (guard secrets/recipients via variables) and include a smoke path in the README.
 
-## Phase 4: Hardening, testing, documentation, release
+## Phase 5: Hardening, testing, documentation, release
 
-### Phase 4.1: Example polish and end-to-end regression (`examples/basic`)
+### Phase 5.1: Example polish and end-to-end regression (`examples/basic`)
 - [ ] Consolidate prior touchpoints into a clean walkthrough (init, plan, apply, publish test message through SNS->SQS->Lambda handlers).
 - [ ] Ensure defaults/variables make the example easy to run with minimal secrets, with notes for SES/Twilio sandboxing.
 - [ ] Verify: `terraform fmt/validate` and `terraform plan` in example; capture expected outputs/log markers for manual SNS publish tests.
 
-### Phase 4.2: Testing & CI
+### Phase 5.2: Testing & CI
 - [ ] Add `make test` to run fmt, validate, lint, and Lambda unit tests.
 - [ ] Consider lightweight Terratest for scheduled-lambda wiring (guarded to skip apply by default).
 - [ ] Add CI workflow (e.g., GitHub Actions) for formatting, validation, and unit tests on PRs.
 - [ ] Verify: CI passes on clean tree; local `make test` passes.
 
-### Phase 4.3: Documentation & release
+### Phase 5.3: Documentation & release
 - [ ] Top-level README: module overview, prerequisites (AWS creds, SES/Twilio setup), quickstart commands.
 - [ ] Module READMEs: inputs/outputs tables and examples (generated or hand-written).
 - [ ] Changelog/semver plan; tag first release after example `plan`/smoke tests documented.
