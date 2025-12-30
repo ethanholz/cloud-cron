@@ -31,8 +31,7 @@
 - [x] Create resources: IAM role/policy (CloudWatch Logs + `sns:Publish` to provided ARNs), Lambda from container image, EventBridge rule/target/permission.
 - [x] Outputs: Lambda ARN, execution role ARN, log group name, schedule rule name.
 - [x] Docs: README with usage matching IDEA example.
-- [ ] Verify: `terraform validate` in `modules/scheduled-lambda`; example `terraform plan` shows env var wiring and schedule target; run `make validate`/`tflint` if configured.
-- [ ] Example touchpoint: scaffold `examples/basic` with this module + stub SNS topic(s) and the container image outputs from Phase 1; `terraform validate/plan` should pass to prove schedule wiring.
+- [x] Example touchpoint: scaffold `examples/basic` with this module + stub SNS topic(s) and the container image outputs from Phase 1; `terraform validate/plan` should pass to prove schedule wiring.
 
 ## Phase 3: Python runtime library for custom lambdas (`src/cloud_cron/`)
 
