@@ -1,7 +1,10 @@
 locals {
-  tags                  = merge({ managed_by = "cloudcron" }, var.tags)
-  environment_variables = merge(var.sns_topics, var.lambda_env)
-  lambda_name           = coalesce(var.lambda_name, "cloudcron-scheduled-${terraform.workspace}")
+  tags = merge({ managed_by = "cloudcron" }, var.tags)
+  environment_variables = merge(
+    { SNS_TOPICS = jsonencode(var.sns_topic_arns) },
+    var.lambda_env,
+  )
+  lambda_name = coalesce(var.lambda_name, "cloudcron-scheduled-${terraform.workspace}")
 }
 
 data "aws_caller_identity" "current" {}
@@ -30,7 +33,7 @@ data "aws_iam_policy_document" "lambda_permissions" {
     sid       = "AllowSnsPublish"
     effect    = "Allow"
     actions   = ["sns:Publish"]
-    resources = values(var.sns_topics)
+    resources = values(var.sns_topic_arns)
   }
 }
 

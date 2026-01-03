@@ -28,8 +28,8 @@ module "my_scheduled_lambda" {
 
   lambda_image_uri = "123456789012.dkr.ecr.us-west-2.amazonaws.com/my-lambda:latest"
   schedule_expression = "rate(5 minutes)"
-  sns_topics = {
-    ENVVAR_NAME = aws_sns_topic.example_topic.arn
+  sns_topic_arns = {
+    example = aws_sns_topic.example_topic.arn
   }
 }
 

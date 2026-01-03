@@ -27,7 +27,7 @@
 - [x] Example touchpoint: allow `examples/basic` to build/push a simple placeholder Lambda image from a local Dockerfile as an alternative to the republish module.
 
 ## Phase 2: Build scheduled Lambda module (`modules/scheduled-lambda`)
-- [x] Define inputs: `lambda_image_uri`, `schedule_expression`, `sns_topics` (map envvar->ARN), optional `lambda_env`, `timeout`, `memory_size`, `tags`.
+- [x] Define inputs: `lambda_image_uri`, `schedule_expression`, `sns_topic_arns` (map topic key->ARN), optional `lambda_env`, `timeout`, `memory_size`, `tags`.
 - [x] Create resources: IAM role/policy (CloudWatch Logs + `sns:Publish` to provided ARNs), Lambda from container image, EventBridge rule/target/permission.
 - [x] Outputs: Lambda ARN, execution role ARN, log group name, schedule rule name.
 - [x] Docs: README with usage matching IDEA example.

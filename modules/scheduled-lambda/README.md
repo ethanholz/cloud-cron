@@ -14,8 +14,8 @@ module "scheduled_lambda" {
 
   lambda_image_uri     = "123456789012.dkr.ecr.us-west-2.amazonaws.com/my-lambda:latest"
   schedule_expression  = "rate(5 minutes)"
-  sns_topics = {
-    TASK_TOPIC = aws_sns_topic.example_topic.arn
+  sns_topic_arns = {
+    task = aws_sns_topic.example_topic.arn
   }
 
   lambda_env = {
@@ -28,7 +28,7 @@ module "scheduled_lambda" {
 
 - `lambda_image_uri` (string): URI of the Lambda container image.
 - `schedule_expression` (string): EventBridge schedule expression.
-- `sns_topics` (map(string)): Environment variable name to SNS topic ARN mapping.
+- `sns_topic_arns` (map(string)): Logical topic keys to SNS topic ARN mapping.
 - `lambda_env` (map(string)): Additional environment variables for the Lambda.
 - `timeout` (number): Lambda timeout in seconds.
 - `memory_size` (number): Lambda memory size in MB.

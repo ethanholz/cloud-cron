@@ -43,14 +43,14 @@ locals {
   active_lambda_image_uri = var.enable_republish ? module.lambda_container_republish[0].lambda_image_uri_with_digest : module.lambda_image_build.image_uri_with_digest
 }
 
-resource "aws_sns_topic" "example_topic" {
-  name = "example-topic"
-}
+module "sns_topics" {
+  source = "../../modules/sns-topics"
 
-locals {
-  sns_topic_map = {
-    example = aws_sns_topic.example_topic.arn
+  topic_names = {
+    example = "example-topic"
   }
+
+  tags = local.common_tags
 }
 
 module "scheduled_lambda" {
@@ -59,12 +59,7 @@ module "scheduled_lambda" {
   lambda_image_uri    = local.active_lambda_image_uri
   schedule_expression = var.schedule_expression
   lambda_name         = var.lambda_name
-  sns_topics = {
-    EXAMPLE_TOPIC_ARN = aws_sns_topic.example_topic.arn
-  }
-  lambda_env = {
-    SNS_TOPICS = jsonencode(local.sns_topic_map)
-  }
+  sns_topic_arns      = module.sns_topics.topic_arns
 
   tags = local.common_tags
 }

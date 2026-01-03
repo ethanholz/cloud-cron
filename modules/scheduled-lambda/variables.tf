@@ -8,8 +8,8 @@ variable "schedule_expression" {
   type        = string
 }
 
-variable "sns_topics" {
-  description = "Map of environment variable names to SNS topic ARNs for publish permissions."
+variable "sns_topic_arns" {
+  description = "Map of logical topic keys to SNS topic ARNs."
   type        = map(string)
 }
 
