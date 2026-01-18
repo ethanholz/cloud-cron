@@ -26,20 +26,27 @@ module "lambda_image_build" {
   tags            = local.common_tags
 }
 
-module "print_notification_container" {
-  source = "../../modules/print-notification-container"
+module "print_lambda_image_build" {
+  count  = var.print_enable_republish ? 0 : 1
+  source = "../../modules/lambda-image-build"
 
-  enable_republish = var.print_enable_republish
-  source_dir       = "${path.module}/../.."
-  dockerfile_path  = "${path.module}/print-notifier/Dockerfile"
+  source_dir      = "${path.module}/../.."
+  dockerfile_path = "${path.module}/print-notifier/Dockerfile"
   build_context_paths = [
     "${path.module}/print-notifier",
     "${path.module}/../../src/cloud_cron",
   ]
-  repository_name             = var.print_repository_name
-  image_tag                   = var.image_tag
-  platform                    = var.platform
-  build_args                  = var.build_args
+  repository_name = var.print_repository_name
+  image_tag       = var.image_tag
+  platform        = var.platform
+  build_args      = var.build_args
+  tags            = local.common_tags
+}
+
+module "print_lambda_container_republish" {
+  count  = var.print_enable_republish ? 1 : 0
+  source = "../../modules/lambda-container"
+
   source_lambda_repo          = var.print_source_lambda_repo
   source_lambda_tag           = var.print_source_lambda_tag
   source_registry_id          = var.print_source_registry_id
@@ -64,6 +71,7 @@ module "lambda_container_republish" {
 
 locals {
   active_lambda_image_uri = var.enable_republish ? module.lambda_container_republish[0].lambda_image_uri_with_digest : module.lambda_image_build.image_uri_with_digest
+  active_print_image_uri  = var.print_enable_republish ? module.print_lambda_container_republish[0].lambda_image_uri_with_digest : module.print_lambda_image_build[0].image_uri_with_digest
 }
 
 module "sns_topics" {
@@ -92,7 +100,7 @@ module "print_notification" {
 
   sns_topic_arn    = module.sns_topics.topic_arns.example
   fifo_queue_name  = "example-print.fifo"
-  lambda_image_uri = module.print_notification_container.lambda_image_uri
+  lambda_image_uri = local.active_print_image_uri
   template_file    = "${path.module}/templates/print.txt"
 
   tags = local.common_tags
