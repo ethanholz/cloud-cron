@@ -32,6 +32,7 @@ version = "0.1.0"
 [tool.pixi.tasks]
 fmt = "tofu fmt -recursive"
 pre-commit = "pre-commit run --all-files"
+pytest-cov = "pytest -v --cov --cov-report=xml"
 validate = "tofu validate"
 
 [tool.pixi.dependencies]

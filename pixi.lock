@@ -418,7 +418,7 @@ packages:
 - pypi: ./
   name: cloud-cron
   version: 0.1.0
-  sha256: cb0d01291b647be8f1d733cac5ed38bcc517c00ea75e96b9950d0b800c191764
+  sha256: d4dc65b349908905ae96aeb76ae9f3713789dae3b7c6316acee4b5de0a13265f
   requires_dist:
   - boto3
   - jinja2
