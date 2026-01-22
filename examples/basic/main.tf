@@ -22,7 +22,6 @@ module "lambda_image_build" {
   repository_name = var.repository_name
   image_tag       = var.image_tag
   platform        = var.platform
-  build_args      = var.build_args
   tags            = local.common_tags
 }
 
@@ -38,7 +37,6 @@ module "print_lambda_image_build" {
   repository_name = var.print_repository_name
   image_tag       = var.image_tag
   platform        = var.platform
-  build_args      = var.build_args
   tags            = local.common_tags
 }
 
