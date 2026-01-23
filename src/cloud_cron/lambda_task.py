@@ -91,7 +91,7 @@ class CronLambdaTask(ABC):
         Returns
         -------
         dict[str, Any]
-            Mapping of topic keys to JSON-serializable payloads.
+            Mapping of result types to JSON-serializable payloads.
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
@@ -166,12 +166,12 @@ def dispatch_sns_messages(
     logger: logging.Logger,
 ) -> None:
     """
-    Dispatches a message to all configured SNS topics.
+    Publishes result messages to an SNS topic.
 
     Parameters
     ----------
     result : Mapping[str, Any]
-        Mapping of topic keys to message payloads.
+        Mapping of result types to message payloads.
     sns_topic_arn : str
         SNS topic ARN to publish all result messages.
     sns_client : botocore.client.BaseClient
